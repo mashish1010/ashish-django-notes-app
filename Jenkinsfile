@@ -1,34 +1,37 @@
+@Library('code_fetch') _
+
 pipeline {
-    agent any 
-    
-    stages{
-        stage("Clone Code"){
+    agent { label 'ashish-agent' }
+
+    stages {
+        stage('code') {
             steps {
-                echo "Cloning the code"
-                git url:"https://github.com/LondheShubham153/django-notes-app.git", branch: "main"
-            }
-        }
-        stage("Build"){
-            steps {
-                echo "Building the image"
-                sh "docker build -t my-note-app ."
-            }
-        }
-        stage("Push to Docker Hub"){
-            steps {
-                echo "Pushing the image to docker hub"
-                withCredentials([usernamePassword(credentialsId:"dockerHub",passwordVariable:"dockerHubPass",usernameVariable:"dockerHubUser")]){
-                sh "docker tag my-note-app ${env.dockerHubUser}/my-note-app:latest"
-                sh "docker login -u ${env.dockerHubUser} -p ${env.dockerHubPass}"
-                sh "docker push ${env.dockerHubUser}/my-note-app:latest"
+                script {
+                    code_fetch("https://github.com/mashish1010/ashish-django-notes-app.git", "main")
                 }
             }
         }
-        stage("Deploy"){
+
+        stage('build') {
             steps {
-                echo "Deploying the container"
-                sh "docker-compose down && docker-compose up -d"
-                
+                script {
+                    Docker_build("latest", "notes-app", "ashishmathur1991")
+                }
+            }
+        }
+
+        stage('push to docker hub') {
+            steps {
+                script {
+                    Docker_push("notes-app", "latest")
+                }
+            }
+        }
+
+        stage('deploy') {
+            steps {
+                echo "This is Deploying codes"
+                sh "docker compose down && docker compose up -d"
             }
         }
     }
